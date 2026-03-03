@@ -113,9 +113,10 @@ pub async fn sync_package(
     // If package hasn't been declared, return
     if load_state(owner.as_str(), repo.as_str(), state_root).is_err() {
         return Err(format!(
-            "Package '{}/{}' needs to be declared before sync, run 'raw-package-manager declare {} {}'",
+            "Package '{}/{}' needs to be declared before sync, run 'grm declare {} {}'",
             owner, repo, owner, repo
-        ).into());
+        )
+        .into());
     }
 
     let release = fetch_latest_release(&owner, &repo).await?;

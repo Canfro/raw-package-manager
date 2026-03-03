@@ -28,7 +28,7 @@ pub async fn fetch_latest_release(
     )?;
 
     let client = Client::builder()
-        .user_agent("raw-package-manager")
+        .user_agent("github-repository-manager")
         .build()?;
 
     let release = client

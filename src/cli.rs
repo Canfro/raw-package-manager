@@ -14,12 +14,12 @@ pub enum Commands {
     List,
 
     /// Declares a package matching the provided owner and repository.
-    /// Build script and config is created in "~/.config/raw-package-manager/".
+    /// Build script and config is created in "~/.config/github-repository-manager/".
     /// Make sure to edit these files before sync.
     Declare { owner: String, repo: String },
 
     /// Sync a package matching the provided owner and repository.
-    /// A package needs to be declared with "raw-package-manager declare" before sync.
+    /// A package needs to be declared with "grm declare" before sync.
     Sync { owner: String, repo: String },
 
     /// Removes a package matching the provided owner and repository.

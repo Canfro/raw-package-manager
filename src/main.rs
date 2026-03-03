@@ -16,9 +16,9 @@ use crate::{
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let home = env::var("HOME")?;
-    let state_root = PathBuf::from(&home).join(".local/state/raw-package-manager");
-    let config_root = PathBuf::from(&home).join(".config/raw-package-manager");
-    let cache_root = PathBuf::from(&home).join(".cache/raw-package-manager");
+    let state_root = PathBuf::from(&home).join(".local/state/github-repository-manager");
+    let config_root = PathBuf::from(&home).join(".config/github-repository-manager");
+    let cache_root = PathBuf::from(&home).join(".cache/github-repository-manager");
 
     create_dir_all(state_root.as_path())?;
     create_dir_all(config_root.as_path())?;
