@@ -1,23 +1,17 @@
 mod cli;
 mod config;
+mod github;
 mod package;
 mod state;
 
 use std::{env, fs::create_dir_all, path::PathBuf};
 
 use clap::Parser;
-use serde::Deserialize;
 
 use crate::{
     cli::{Cli, Commands},
     package::{declare_package, list_packages, remove_package, sync_package},
 };
-
-#[derive(Deserialize, Debug)]
-struct Release {
-    tag_name: String,
-    tarball_url: String,
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

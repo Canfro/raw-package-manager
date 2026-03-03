@@ -1,4 +1,4 @@
-use crate::Release;
+use crate::github::fetch_latest_release;
 use std::{
     fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, remove_file, write},
     io::Cursor,
@@ -8,7 +8,6 @@ use std::{
 };
 
 use flate2::read::GzDecoder;
-use reqwest::{Client, Url};
 use tar::Archive;
 
 use crate::{
@@ -119,35 +118,9 @@ pub async fn sync_package(
         ).into());
     }
 
-    // Fetch the latest tag name and source code tarball from the GitHub repository
-    let release_url = Url::from_str(
-        format!(
-            "https://api.github.com/repos/{}/{}/releases/latest",
-            owner, repo
-        )
-        .as_str(),
-    )?;
-
-    let client = Client::builder()
-        .user_agent("raw-package-manager")
-        .build()?;
-    let release = client
-        .get(release_url)
-        .header("accept", "application/vnd.github+json")
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<Release>()
-        .await?;
-
-    // Download the tarball
-    let tarball = client
-        .get(release.tarball_url)
-        .send()
-        .await?
-        .error_for_status()?
-        .bytes()
-        .await?;
+    let release = fetch_latest_release(&owner, &repo).await?;
+    let tag_name = release.0;
+    let tarball = release.1;
 
     let cache_dir = cache_root.join(format!("{}-{}", owner, repo));
 
@@ -195,7 +168,7 @@ pub async fn sync_package(
         PackageState {
             owner,
             repo,
-            installed_version: release.tag_name,
+            installed_version: tag_name,
         },
         state_root,
     )?;
