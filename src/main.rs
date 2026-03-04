@@ -41,12 +41,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
             .await?
         }
-        Commands::Remove { owner, repo } => remove_package(
+        Commands::Remove {
+            owner,
+            repo,
+            config,
+        } => remove_package(
             owner,
             repo,
             state_root.as_path(),
             cache_root.as_path(),
             config_root.as_path(),
+            config,
         )?,
     }
 

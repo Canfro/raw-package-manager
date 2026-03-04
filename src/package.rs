@@ -183,6 +183,7 @@ pub fn remove_package(
     state_root: &Path,
     cache_root: &Path,
     config_root: &Path,
+    config: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let package_config = match load_config(owner.as_str(), repo.as_str(), config_root) {
         Ok(ok) => ok,
@@ -197,8 +198,6 @@ pub fn remove_package(
             return Err(err);
         }
     };
-
-    println!("Configuration files aren't removed, you must delete them manually if desired.");
 
     for binary_string in package_config.binaries_path {
         let binary_file = PathBuf::from_str(&binary_string)?;
@@ -228,6 +227,12 @@ pub fn remove_package(
     if cache_dir.exists() {
         remove_dir_all(&cache_dir)?;
         println!("Directory removed: {}", cache_dir.display());
+    }
+
+    if config {
+        let config_dir = config_root.join(format!("{}-{}", owner, repo));
+        remove_dir_all(&config_dir)?;
+        println!("Directory removed: {}", config_dir.display());
     }
 
     println!("Done!");

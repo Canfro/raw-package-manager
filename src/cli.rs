@@ -24,5 +24,12 @@ pub enum Commands {
 
     /// Removes a package matching the provided owner and repository.
     /// Note that any additional files created by the package won't be deleted.
-    Remove { owner: String, repo: String },
+    Remove {
+        owner: String,
+        repo: String,
+
+        /// Delete cofig files.
+        #[arg(short, long)]
+        config: bool,
+    },
 }
