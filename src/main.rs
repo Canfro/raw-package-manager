@@ -1,12 +1,13 @@
 mod cli;
 mod config;
+mod data;
 mod github;
 mod package;
-mod state;
 
-use std::{env, fs::create_dir_all, path::PathBuf};
+use std::fs::create_dir_all;
 
 use clap::Parser;
+use directories::BaseDirs;
 
 use crate::{
     cli::{Cli, Commands},
@@ -15,27 +16,27 @@ use crate::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let home = env::var("HOME")?;
-    let state_root = PathBuf::from(&home).join(".local/state/github-repository-manager");
-    let config_root = PathBuf::from(&home).join(".config/github-repository-manager");
-    let cache_root = PathBuf::from(&home).join(".cache/github-repository-manager");
+    let base_dirs = BaseDirs::new().ok_or("Failed to get user base directories")?;
+    let data_root = base_dirs.data_dir().join("github-repository-manager");
+    let config_root = base_dirs.config_dir().join("github-repository-manager");
+    let cache_root = base_dirs.cache_dir().join("github-repository-manager");
 
-    create_dir_all(state_root.as_path())?;
+    create_dir_all(data_root.as_path())?;
     create_dir_all(config_root.as_path())?;
     create_dir_all(cache_root.as_path())?;
 
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::List => list_packages(state_root.as_path())?,
+        Commands::List => list_packages(data_root.as_path())?,
         Commands::Declare { owner, repo } => {
-            declare_package(owner, repo, config_root.as_path(), state_root.as_path())?
+            declare_package(owner, repo, config_root.as_path(), data_root.as_path())?
         }
         Commands::Sync { owner, repo } => {
             sync_package(
                 owner,
                 repo,
-                state_root.as_path(),
+                data_root.as_path(),
                 config_root.as_path(),
                 cache_root.as_path(),
             )
@@ -48,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         } => remove_package(
             owner,
             repo,
-            state_root.as_path(),
+            data_root.as_path(),
             cache_root.as_path(),
             config_root.as_path(),
             config,

@@ -12,19 +12,19 @@ use tar::Archive;
 
 use crate::{
     config::{PackageConfig, load_config, save_config},
-    state::{PackageState, load_state, save_state},
+    data::{PackageData, load_data, save_data},
 };
 
-pub fn list_packages(state_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    for res in read_dir(state_root)? {
-        let state_file = res?.path();
+pub fn list_packages(data_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    for res in read_dir(data_root)? {
+        let data_file = res?.path();
 
-        if let Ok(package_state) =
-            serde_json::from_str::<PackageState>(read_to_string(state_file)?.as_str())
+        if let Ok(package_data) =
+            serde_json::from_str::<PackageData>(read_to_string(data_file)?.as_str())
         {
             println!(
                 "Owner: {}\nRepository: {}\nVersion: {}\n",
-                package_state.owner, package_state.repo, package_state.installed_version
+                package_data.owner, package_data.repo, package_data.installed_version
             );
         }
     }
@@ -36,7 +36,7 @@ pub fn declare_package(
     owner: String,
     repo: String,
     config_root: &Path,
-    state_root: &Path,
+    data_root: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Write template to build script
     let config_dir = config_root.join(format!("{}-{}", owner, repo));
@@ -51,25 +51,25 @@ pub fn declare_package(
     }
 
     // Write package state file
-    if load_state(owner.as_str(), repo.as_str(), state_root).is_ok() {
+    if load_data(owner.as_str(), repo.as_str(), data_root).is_ok() {
         println!(
-            "Already existing state file: {}/{}-{}.json",
-            state_root.display(),
+            "Already existing data file: {}/{}-{}.json",
+            data_root.display(),
             owner,
             repo
         );
     } else {
-        save_state(
-            PackageState {
+        save_data(
+            PackageData {
                 owner: owner.clone(),
                 repo: repo.clone(),
                 installed_version: "none".to_string(),
             },
-            state_root,
+            data_root,
         )?;
         println!(
             "Created missing state file: {}/{}-{}.json",
-            state_root.display(),
+            data_root.display(),
             owner,
             repo
         );
@@ -107,12 +107,12 @@ pub fn declare_package(
 pub async fn sync_package(
     owner: String,
     repo: String,
-    state_root: &Path,
+    data_root: &Path,
     config_root: &Path,
     cache_root: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // If package hasn't been declared, return
-    if load_state(owner.as_str(), repo.as_str(), state_root).is_err() {
+    if load_data(owner.as_str(), repo.as_str(), data_root).is_err() {
         return Err(format!(
             "Package '{}/{}' needs to be declared before sync, run 'grm declare {} {}'",
             owner, repo, owner, repo
@@ -164,13 +164,13 @@ pub async fn sync_package(
     }
 
     // Update package state file
-    save_state(
-        PackageState {
+    save_data(
+        PackageData {
             owner,
             repo,
             installed_version: release.tag_name,
         },
-        state_root,
+        data_root,
     )?;
 
     println!("Done!");
@@ -180,7 +180,7 @@ pub async fn sync_package(
 pub fn remove_package(
     owner: String,
     repo: String,
-    state_root: &Path,
+    data_root: &Path,
     cache_root: &Path,
     config_root: &Path,
     config: bool,
@@ -217,10 +217,10 @@ pub fn remove_package(
         println!("File removed: {}", binary_file.display());
     }
 
-    let state_file = state_root.join(format!("{}-{}.json", owner, repo));
-    if state_file.exists() {
-        remove_file(&state_file)?;
-        println!("File removed: {}", state_file.display());
+    let data_file = data_root.join(format!("{}-{}.json", owner, repo));
+    if data_file.exists() {
+        remove_file(&data_file)?;
+        println!("File removed: {}", data_file.display());
     }
 
     let cache_dir = cache_root.join(format!("{}-{}", owner, repo));

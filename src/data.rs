@@ -6,13 +6,13 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PackageState {
+pub struct PackageData {
     pub owner: String,
     pub repo: String,
     pub installed_version: String,
 }
 
-pub fn save_state(package_state: PackageState, state_root: &Path) -> Result<(), std::io::Error> {
+pub fn save_data(package_state: PackageData, state_root: &Path) -> Result<(), std::io::Error> {
     let json_file = state_root.join(format!(
         "{}-{}.json",
         package_state.owner, package_state.repo
@@ -24,13 +24,13 @@ pub fn save_state(package_state: PackageState, state_root: &Path) -> Result<(), 
     Ok(())
 }
 
-pub fn load_state(
+pub fn load_data(
     owner: &str,
     repo: &str,
     state_root: &Path,
-) -> Result<PackageState, Box<dyn std::error::Error>> {
+) -> Result<PackageData, Box<dyn std::error::Error>> {
     let json_file = state_root.join(format!("{}-{}.json", owner, repo));
     let json_string = read_to_string(json_file)?;
 
-    Ok(serde_json::from_str::<PackageState>(json_string.as_str())?)
+    Ok(serde_json::from_str::<PackageData>(json_string.as_str())?)
 }
