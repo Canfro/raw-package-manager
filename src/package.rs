@@ -1,7 +1,7 @@
 use crate::github::fetch_latest_release;
 use std::{
     fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, remove_file, write},
-    io::Cursor,
+    io::{Cursor, ErrorKind},
     path::{Path, PathBuf},
     process::{Command, Stdio},
     str::FromStr,
@@ -182,23 +182,51 @@ pub fn remove_package(
     cache_root: &Path,
     config_root: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let package_config = load_config(owner.as_str(), repo.as_str(), config_root)?;
+    let package_config = match load_config(owner.as_str(), repo.as_str(), config_root) {
+        Ok(ok) => ok,
+        Err(err) => {
+            if let Some(io_err) = err.downcast_ref::<std::io::Error>()
+                && (io_err.kind() == ErrorKind::NotFound)
+            {
+                return Err(
+                    "No package configuration file exists, unable to remove package. Remove manually if desired.".into(),
+                );
+            }
+            return Err(err);
+        }
+    };
+
+    println!("Configuration files aren't removed, you must delete them manually if desired.");
 
     for binary_string in package_config.binaries_path {
         let binary_file = PathBuf::from_str(&binary_string)?;
+        if !binary_file.exists() {
+            continue;
+        };
+
         let binary_status = Command::new("sudo")
             .arg("rm")
             .arg("-r")
-            .arg(binary_file)
+            .arg(&binary_file)
             .status()?;
-
         if !binary_status.success() {
             return Err("Failed to remove file with sudo".into());
         }
+
+        println!("File removed: {}", binary_file.display());
     }
 
-    remove_file(state_root.join(format!("{}-{}.json", owner, repo)))?;
-    remove_dir_all(cache_root.join(format!("{}-{}", owner, repo)))?;
+    let state_file = state_root.join(format!("{}-{}.json", owner, repo));
+    if state_file.exists() {
+        remove_file(&state_file)?;
+        println!("File removed: {}", state_file.display());
+    }
+
+    let cache_dir = cache_root.join(format!("{}-{}", owner, repo));
+    if cache_dir.exists() {
+        remove_dir_all(&cache_dir)?;
+        println!("Directory removed: {}", cache_dir.display());
+    }
 
     Ok(())
 }
