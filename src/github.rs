@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use bytes::Bytes;
-use reqwest::{Client, Url};
+use reqwest::{Client, StatusCode, Url};
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -31,14 +31,26 @@ pub async fn fetch_latest_release(
         .user_agent("github-repository-manager")
         .build()?;
 
-    let release = client
+    let response = client
         .get(release_url)
         .header("accept", "application/vnd.github+json")
         .send()
-        .await?
-        .error_for_status()?
-        .json::<Release>()
         .await?;
+
+    match response.status() {
+        StatusCode::OK => {}
+        StatusCode::FORBIDDEN => return Err("Request forbidden by GitHub API.".into()),
+        StatusCode::NOT_FOUND => {
+            return Err(format!(
+                "Repository '{}/{}' doesn't exist, or has no releases.",
+                owner, repo
+            )
+            .into());
+        }
+        status => return Err(format!("GitHub returned unexpected status: {}", status).into()),
+    }
+
+    let release = response.json::<Release>().await?;
 
     let tarball = client
         .get(release.tarball_url)

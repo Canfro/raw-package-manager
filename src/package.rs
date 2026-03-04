@@ -100,6 +100,7 @@ pub fn declare_package(
         );
     }
 
+    println!("Done!");
     Ok(())
 }
 
@@ -172,6 +173,7 @@ pub async fn sync_package(
         state_root,
     )?;
 
+    println!("Done!");
     Ok(())
 }
 
@@ -228,5 +230,6 @@ pub fn remove_package(
         println!("Directory removed: {}", cache_dir.display());
     }
 
+    println!("Done!");
     Ok(())
 }
