@@ -65,13 +65,6 @@ impl Display for GrmError {
 
 impl Debug for GrmError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Io(arg0) => f.debug_tuple("Io").field(arg0).finish(),
-            Self::Json(arg0) => f.debug_tuple("Json").field(arg0).finish(),
-            Self::Reqwest(arg0) => f.debug_tuple("Reqwest").field(arg0).finish(),
-            Self::UrlParse(arg0) => f.debug_tuple("UrlParse").field(arg0).finish(),
-            Self::Custom(arg0) => f.debug_tuple("Custom").field(arg0).finish(),
-            Self::Infallible(arg0) => f.debug_tuple("Infallible").field(arg0).finish(),
-        }
+        write!(f, "{}", self)
     }
 }
