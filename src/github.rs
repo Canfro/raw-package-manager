@@ -1,8 +1,10 @@
 use std::str::FromStr;
 
 use bytes::Bytes;
-use reqwest::{Client, StatusCode, Url};
+use reqwest::{Client, Url};
 use serde::Deserialize;
+
+use crate::error::GrmError;
 
 #[derive(Deserialize, Debug)]
 pub struct Release {
@@ -15,10 +17,7 @@ pub struct FetchedRelease {
     pub tarball_bytes: Bytes,
 }
 
-pub async fn fetch_latest_release(
-    owner: &str,
-    repo: &str,
-) -> Result<FetchedRelease, Box<dyn std::error::Error>> {
+pub async fn fetch_latest_release(owner: &str, repo: &str) -> Result<FetchedRelease, GrmError> {
     let release_url = Url::from_str(
         format!(
             "https://api.github.com/repos/{}/{}/releases/latest",
@@ -31,26 +30,14 @@ pub async fn fetch_latest_release(
         .user_agent("github-repository-manager")
         .build()?;
 
-    let response = client
+    let release = client
         .get(release_url)
         .header("accept", "application/vnd.github+json")
         .send()
+        .await?
+        .error_for_status()?
+        .json::<Release>()
         .await?;
-
-    match response.status() {
-        StatusCode::OK => {}
-        StatusCode::FORBIDDEN => return Err("Request forbidden by GitHub API.".into()),
-        StatusCode::NOT_FOUND => {
-            return Err(format!(
-                "Repository '{}/{}' doesn't exist, or has no releases.",
-                owner, repo
-            )
-            .into());
-        }
-        status => return Err(format!("GitHub returned unexpected status: {}", status).into()),
-    }
-
-    let release = response.json::<Release>().await?;
 
     let tarball = client
         .get(release.tarball_url)

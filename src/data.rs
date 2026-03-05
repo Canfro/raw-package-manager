@@ -5,6 +5,8 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
+use crate::error::GrmError;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PackageData {
     pub owner: String,
@@ -12,7 +14,7 @@ pub struct PackageData {
     pub installed_version: String,
 }
 
-pub fn save_data(package_state: PackageData, state_root: &Path) -> Result<(), std::io::Error> {
+pub fn save_data(package_state: PackageData, state_root: &Path) -> Result<(), GrmError> {
     let json_file = state_root.join(format!(
         "{}-{}.json",
         package_state.owner, package_state.repo
@@ -24,11 +26,7 @@ pub fn save_data(package_state: PackageData, state_root: &Path) -> Result<(), st
     Ok(())
 }
 
-pub fn load_data(
-    owner: &str,
-    repo: &str,
-    state_root: &Path,
-) -> Result<PackageData, Box<dyn std::error::Error>> {
+pub fn load_data(owner: &str, repo: &str, state_root: &Path) -> Result<PackageData, GrmError> {
     let json_file = state_root.join(format!("{}-{}.json", owner, repo));
     let json_string = read_to_string(json_file)?;
 

@@ -1,4 +1,4 @@
-use crate::github::fetch_latest_release;
+use crate::{error::GrmError, github::fetch_latest_release};
 use std::{
     fs::{create_dir_all, read_dir, read_to_string, remove_dir_all, remove_file, write},
     io::{Cursor, ErrorKind},
@@ -15,7 +15,7 @@ use crate::{
     data::{PackageData, load_data, save_data},
 };
 
-pub fn list_packages(data_root: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn list_packages(data_root: &Path) -> Result<(), GrmError> {
     for res in read_dir(data_root)? {
         let data_file = res?.path();
 
@@ -37,7 +37,7 @@ pub fn declare_package(
     repo: String,
     config_root: &Path,
     data_root: &Path,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), GrmError> {
     // Write template to build script
     let config_dir = config_root.join(format!("{}-{}", owner, repo));
     create_dir_all(config_dir.as_path())?;
@@ -110,14 +110,13 @@ pub async fn sync_package(
     data_root: &Path,
     config_root: &Path,
     cache_root: &Path,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), GrmError> {
     // If package hasn't been declared, return
     if load_data(owner.as_str(), repo.as_str(), data_root).is_err() {
         return Err(format!(
             "Package '{}/{}' needs to be declared before sync, run 'grm declare {} {}'",
             owner, repo, owner, repo
-        )
-        .into());
+        ))?;
     }
 
     let release = fetch_latest_release(&owner, &repo).await?;
@@ -142,7 +141,7 @@ pub async fn sync_package(
         read_dir(cache_dir.as_path())?
             .filter_map(|res| res.ok())
             .find(|entry| entry.file_type().map(|t| t.is_dir()).unwrap_or(false))
-            .ok_or("Tarball did not contain a root directory")?
+            .ok_or("Tarball did not contain a root directory".to_string())?
             .path()
             .to_str()
             .unwrap(),
@@ -184,19 +183,15 @@ pub fn remove_package(
     cache_root: &Path,
     config_root: &Path,
     config: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), GrmError> {
     let package_config = match load_config(owner.as_str(), repo.as_str(), config_root) {
-        Ok(ok) => ok,
-        Err(err) => {
-            if let Some(io_err) = err.downcast_ref::<std::io::Error>()
-                && (io_err.kind() == ErrorKind::NotFound)
-            {
-                return Err(
-                    "No package configuration file exists, unable to remove package. Remove manually if desired.".into(),
-                );
-            }
-            return Err(err);
+        Ok(config) => config,
+        Err(GrmError::Io(io_err)) if io_err.kind() == ErrorKind::NotFound => {
+            return Err(GrmError::Custom(
+                "No package configuration file exists, unable to remove package. Remove manually if desired.".to_string(),
+            ));
         }
+        Err(err) => return Err(err),
     };
 
     for binary_string in package_config.binaries_path {
@@ -211,7 +206,9 @@ pub fn remove_package(
             .arg(&binary_file)
             .status()?;
         if !binary_status.success() {
-            return Err("Failed to remove file with sudo".into());
+            return Err(GrmError::Custom(
+                "Failed to remove file with sudo.".to_string(),
+            ));
         }
 
         println!("File removed: {}", binary_file.display());

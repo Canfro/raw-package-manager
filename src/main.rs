@@ -1,6 +1,7 @@
 mod cli;
 mod config;
 mod data;
+mod error;
 mod github;
 mod package;
 
@@ -11,12 +12,15 @@ use directories::BaseDirs;
 
 use crate::{
     cli::{Cli, Commands},
+    error::GrmError,
     package::{declare_package, list_packages, remove_package, sync_package},
 };
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let base_dirs = BaseDirs::new().ok_or("Failed to get user base directories")?;
+async fn main() -> Result<(), GrmError> {
+    let base_dirs = BaseDirs::new().ok_or(GrmError::Custom(
+        "Failed to get user base directories".to_string(),
+    ))?;
     let data_root = base_dirs.data_dir().join("github-repository-manager");
     let config_root = base_dirs.config_dir().join("github-repository-manager");
     let cache_root = base_dirs.cache_dir().join("github-repository-manager");

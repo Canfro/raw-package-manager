@@ -5,6 +5,8 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
+use crate::error::GrmError;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PackageConfig {
     pub binaries_path: Vec<String>,
@@ -15,7 +17,7 @@ pub fn save_config(
     repo: &str,
     package_config: PackageConfig,
     config_root: &Path,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), GrmError> {
     let config_dir = config_root.join(format!("{}-{}", owner, repo));
     let json_file = config_dir.join(format!("{}-{}.json", owner, repo));
     let json_string = serde_json::to_string_pretty(&package_config)?;
@@ -25,11 +27,7 @@ pub fn save_config(
     Ok(())
 }
 
-pub fn load_config(
-    owner: &str,
-    repo: &str,
-    config_root: &Path,
-) -> Result<PackageConfig, Box<dyn std::error::Error>> {
+pub fn load_config(owner: &str, repo: &str, config_root: &Path) -> Result<PackageConfig, GrmError> {
     let config_dir = config_root.join(format!("{}-{}", owner, repo));
     let json_file = config_dir.join(format!("{}-{}.json", owner, repo));
     let json_string = read_to_string(json_file)?;
