@@ -23,7 +23,7 @@ pub fn list_packages(data_root: &Path) -> Result<(), GrmError> {
             serde_json::from_str::<PackageData>(read_to_string(data_file)?.as_str())
         {
             println!(
-                "Owner: {}\nRepository: {}\nVersion: {}\n",
+                "{}/{}\nVersion: {}\n",
                 package_data.owner, package_data.repo, package_data.installed_version
             );
         }
@@ -68,7 +68,7 @@ pub fn declare_package(
             data_root,
         )?;
         println!(
-            "Created missing state file: {}/{}-{}.json",
+            "Created missing data file: {}/{}-{}.json",
             data_root.display(),
             owner,
             repo

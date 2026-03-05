@@ -14,20 +14,17 @@ pub struct PackageData {
     pub installed_version: String,
 }
 
-pub fn save_data(package_state: PackageData, state_root: &Path) -> Result<(), GrmError> {
-    let json_file = state_root.join(format!(
-        "{}-{}.json",
-        package_state.owner, package_state.repo
-    ));
-    let json_string = serde_json::to_string_pretty(&package_state)?;
+pub fn save_data(package_data: PackageData, data_root: &Path) -> Result<(), GrmError> {
+    let json_file = data_root.join(format!("{}-{}.json", package_data.owner, package_data.repo));
+    let json_string = serde_json::to_string_pretty(&package_data)?;
 
     write(json_file, json_string)?;
 
     Ok(())
 }
 
-pub fn load_data(owner: &str, repo: &str, state_root: &Path) -> Result<PackageData, GrmError> {
-    let json_file = state_root.join(format!("{}-{}.json", owner, repo));
+pub fn load_data(owner: &str, repo: &str, data_root: &Path) -> Result<PackageData, GrmError> {
+    let json_file = data_root.join(format!("{}-{}.json", owner, repo));
     let json_string = read_to_string(json_file)?;
 
     Ok(serde_json::from_str::<PackageData>(json_string.as_str())?)
